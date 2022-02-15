@@ -26,7 +26,6 @@ func genericSpread(any ...interface{}) {
 	fmt.Println("check type", reflect.TypeOf(any))
 	fmt.Println("check type 1", reflect.TypeOf(any[0]))
 	fmt.Println("check type 2", reflect.TypeOf(any[1]))
-
 }
 
 func New() {

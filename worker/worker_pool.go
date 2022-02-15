@@ -2,20 +2,17 @@ package worker
 
 import (
 	"fmt"
-	"sandbox-go/util"
-	"sync"
 	"time"
 )
 
 type TaskWrapper struct {
-	Func  func(...interface{})
-	Param []interface{}
+	Func   func(...interface{})
+	Params []interface{}
 }
 
 type WorkerPool struct {
-	TotalWorker int
-	Wg          *sync.WaitGroup
-	Task        chan TaskWrapper
+	MaxGoRoutine int
+	Task         chan TaskWrapper
 }
 
 func (wp *WorkerPool) AddTask(taskWrapper TaskWrapper) {
@@ -23,11 +20,10 @@ func (wp *WorkerPool) AddTask(taskWrapper TaskWrapper) {
 }
 
 func (wp *WorkerPool) Run() {
-	for i := 0; i < wp.TotalWorker; i++ {
+	for i := 0; i < wp.MaxGoRoutine; i++ {
 		go func(i int) {
 			for task := range wp.Task {
-				task.Func(task.Param...)
-				wp.Wg.Done()
+				task.Func(task.Params...)
 			}
 		}(i)
 	}
@@ -35,49 +31,64 @@ func (wp *WorkerPool) Run() {
 
 func NewWorkerPool() {
 	fmt.Println("worker pool - start")
-	defer util.TimeTrack(time.Now(), "worker pool")
+
+	// benchmark
+	defer BenchmarkMemory("worker pool")
+	defer BenchmarkTime("worker pool", time.Now())
+
+	// goroutine checker
+	// go func() {
+	// 	for {
+	// 		fmt.Println("num goroutine:", runtime.NumGoroutine())
+	// 		time.Sleep(time.Second * 3)
+	// 	}
+	// }()
 
 	// worker
-	wg := sync.WaitGroup{}
-	workerTotal := 3
+	maxGoRoutine := 3
 	worker := WorkerPool{
-		Wg:          &wg,
-		TotalWorker: workerTotal,
-		Task:        make(chan TaskWrapper),
+		MaxGoRoutine: maxGoRoutine,
+		Task:         make(chan TaskWrapper),
 	}
 	worker.Run()
 
 	// task
-	taskTotal := 9
-	taskResult := make(chan string, taskTotal)
-	wg.Add(taskTotal)
+	maxTask := 100
+	taskResult := make(chan string, maxTask)
 
-	for i := 1; i <= taskTotal; i++ {
-		task := TaskWrapper{
-			Func: func(params ...interface{}) {
-				name := params[0].(string)
-				i := params[1].(int)
+	// defer
+	defer func() {
+		close(taskResult)
+		close(worker.Task)
+	}()
 
-				timeConsume := time.Second * 1
-				if i%3 == 0 {
-					timeConsume = time.Second * 10
-				}
-				time.Sleep(timeConsume)
+	go func() {
+		for i := 1; i <= maxTask; i++ {
+			task := TaskWrapper{
+				Func: func(params ...interface{}) {
+					name := params[0].(string)
+					i := params[1].(int)
 
-				maskName := fmt.Sprintf(`Mr %s %d, consume %d`, name, i, timeConsume/time.Second)
-				taskResult <- maskName
-			},
-			Param: []interface{}{"malik", i},
+					HighMemoryTask()
+
+					timeConsume := time.Second * 1
+					// if i%3 == 0 {
+					// 	timeConsume = time.Second * 10
+					// }
+					time.Sleep(timeConsume)
+
+					maskName := fmt.Sprintf(`Mr %s %d, consume %d`, name, i, timeConsume/time.Second)
+					taskResult <- maskName
+				},
+				Params: []interface{}{"malik", i},
+			}
+			worker.AddTask(task)
 		}
-		worker.AddTask(task)
-	}
+	}()
 
-	for i := 0; i < taskTotal; i++ {
-		fmt.Println("result worker pool :", <-taskResult)
+	for i := 0; i < maxTask; i++ {
+		fmt.Println("worker pool - result :", <-taskResult)
 	}
-
-	close(taskResult)
-	close(worker.Task)
 
 	fmt.Println("worker pool - finish")
 }

@@ -2,17 +2,27 @@ package worker
 
 import (
 	"fmt"
-	"sandbox-go/util"
 	"sync"
 	"time"
 )
 
 func NewWgWait() {
 	fmt.Println("wg wait - start")
-	defer util.TimeTrack(time.Now(), "wg wait")
+
+	// benchmark
+	defer BenchmarkMemory("wg wait")
+	defer BenchmarkTime("wg wait", time.Now())
+
+	// goroutine checker
+	// go func() {
+	// 	for {
+	// 		fmt.Println("num goroutine:", runtime.NumGoroutine())
+	// 		time.Sleep(time.Second * 3)
+	// 	}
+	// }()
 
 	workerTotal := 3
-	taskTotal := 9
+	taskTotal := 100
 	taskResult := make(chan string)
 
 	go func() {
@@ -28,10 +38,12 @@ func NewWgWait() {
 			go func(name string, i int) {
 				defer wg.Done()
 
+				HighMemoryTask()
+
 				timeConsume := time.Second * 1
-				if i%3 == 0 {
-					timeConsume = time.Second * 10
-				}
+				// if i%3 == 0 {
+				// 	timeConsume = time.Second * 10
+				// }
 				time.Sleep(timeConsume)
 
 				maskName := fmt.Sprintf(`Mr %s %d, consume %d`, name, i, timeConsume/time.Second)
@@ -42,8 +54,8 @@ func NewWgWait() {
 		wg.Wait()
 	}()
 
-	for i := 0; i < taskTotal; i++ {
-		fmt.Println("result wg wait :", <-taskResult)
+	for result := range taskResult {
+		fmt.Println("wg wait - result :", result)
 	}
 
 	fmt.Println("wg wait - finish")

@@ -3,6 +3,7 @@ package main
 import "sandbox-go/worker"
 
 func main() {
-	worker.NewWorkerPool()
+	// s_benchmark.NewBenchmark()
 	// worker.NewWgWait()
+	worker.NewWorkerPool()
 }
