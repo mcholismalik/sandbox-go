@@ -41,9 +41,9 @@ func NewWgWait() {
 				HighMemoryTask()
 
 				timeConsume := time.Second * 1
-				// if i%3 == 0 {
-				// 	timeConsume = time.Second * 10
-				// }
+				if i%3 == 0 {
+					timeConsume = time.Second * 10
+				}
 				time.Sleep(timeConsume)
 
 				maskName := fmt.Sprintf(`Mr %s %d, consume %d`, name, i, timeConsume/time.Second)

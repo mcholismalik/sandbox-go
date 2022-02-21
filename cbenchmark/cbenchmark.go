@@ -1,8 +1,10 @@
-package s_benchmark
+package cbenchmark
 
 import (
+	"bytes"
 	"fmt"
 	"runtime"
+	"strings"
 	"time"
 )
 
@@ -48,4 +50,21 @@ func PrintMemUsage() {
 
 func bToMb(b uint64) uint64 {
 	return b / 1024 / 1024
+}
+
+// Calculate returns x + 2.
+func Calculate(x int) (result int) {
+	result = x + 2
+	return result
+}
+
+func ConcatenateBuffer(first string, second string) string {
+	var buffer bytes.Buffer
+	buffer.WriteString(first)
+	buffer.WriteString(second)
+	return buffer.String()
+}
+
+func ConcatenateJoin(first string, second string) string {
+	return strings.Join([]string{first, second}, "")
 }
