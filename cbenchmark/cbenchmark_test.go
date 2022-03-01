@@ -21,3 +21,12 @@ func BenchmarkConcatenateJoin(b *testing.B) {
 		ConcatenateJoin("first", "second")
 	}
 }
+
+func BenchmarkAppendBigNum(b *testing.B) {
+	var overall [][]int
+	for i := 0; i < b.N; i++ {
+		a := make([]int, 0, 999999)
+		overall = append(overall, a)
+	}
+	overall = nil
+}

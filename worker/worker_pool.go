@@ -33,7 +33,7 @@ func NewWorkerPool() {
 	fmt.Println("worker pool - start")
 
 	// benchmark
-	defer BenchmarkMemory("worker pool")
+	defer BenchmarkMemory("worker pool - after")
 	defer BenchmarkTime("worker pool", time.Now())
 
 	// goroutine checker
@@ -75,7 +75,7 @@ func NewWorkerPool() {
 					// if i%3 == 0 {
 					// 	timeConsume = time.Second * 10
 					// }
-					time.Sleep(timeConsume)
+					// time.Sleep(timeConsume)
 
 					maskName := fmt.Sprintf(`Mr %s %d, consume %d`, name, i, timeConsume/time.Second)
 					taskResult <- maskName

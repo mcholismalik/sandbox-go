@@ -1,9 +1,10 @@
 package main
 
 import (
-	"sandbox-go/racing"
+	"sandbox-go/worker"
 )
 
 func main() {
-	racing.NewRacing()
+	worker.NewWgWait()
+	// worker.NewWorkerPool()
 }

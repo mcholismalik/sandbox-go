@@ -32,12 +32,14 @@ func (p *Product) ToProductEvent() ProductEvent {
 func NewRacing() {
 	fmt.Println("start")
 
+	mapUnique := make(map[string]bool)
+	numTask := 999999
 	wg := sync.WaitGroup{}
-	mut := sync.Mutex{}
-	chanWrapper := make(chan string, 100)
+	// mut := sync.Mutex{}
+	chanWrapper := make(chan string, numTask)
 
 	go func() {
-		for i := 1; i <= 100; i++ {
+		for i := 1; i < numTask; i++ {
 			wg.Add(1)
 			go func() {
 				product := Product{
@@ -45,18 +47,31 @@ func NewRacing() {
 					Name: "name",
 				}
 
-				mut.Lock()
+				// mut.Lock()
 				productEvent := product.ToProductEvent()
-				mut.Unlock()
+				fmt.Println(productEvent.EventID)
+				if _, ok := mapUnique[productEvent.EventID]; ok {
+					panic("gotcha")
+				}
+				// mut.Unlock()
+
+				if true {
+					chanWrapper <- "test return"
+					return
+				}
 
 				chanWrapper <- productEvent.EventID
+
 			}()
 			wg.Done()
 		}
 	}()
 
-	for i := 1; i <= 100; i++ {
+	total := 1
+	for i := 1; i < numTask; i++ {
+		total = total + 1
 		fmt.Println("result:", <-chanWrapper)
+		fmt.Println("total:", total)
 	}
 
 	wg.Wait()
