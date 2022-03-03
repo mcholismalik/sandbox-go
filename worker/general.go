@@ -28,5 +28,4 @@ func HighMemoryTask() {
 		a := make([]int, 0, 999999)
 		overall = append(overall, a)
 	}
-	overall = nil
 }

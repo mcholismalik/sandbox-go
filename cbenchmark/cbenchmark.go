@@ -68,3 +68,21 @@ func ConcatenateBuffer(first string, second string) string {
 func ConcatenateJoin(first string, second string) string {
 	return strings.Join([]string{first, second}, "")
 }
+
+func LoopChannelBool(ch chan chan bool) {
+	for {
+		<-ch <- true
+	}
+}
+
+func LoopChannelString(ch chan string) {
+	for {
+		<-ch
+	}
+}
+
+func LoopChannelStruct(ch chan struct{ ID string }) {
+	for {
+		<-ch
+	}
+}
