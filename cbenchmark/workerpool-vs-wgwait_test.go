@@ -9,7 +9,7 @@ import (
 func BenchmarkWgWait(b *testing.B) {
 	ch := make(chan string)
 	wg := &sync.WaitGroup{}
-	maxGoroutine := 1
+	maxGoroutine := 3
 	go WgWait(ch, wg, maxGoroutine)
 
 	for i := 0; i < b.N; i++ {
@@ -18,7 +18,7 @@ func BenchmarkWgWait(b *testing.B) {
 }
 
 func BenchmarkWorkerPool(b *testing.B) {
-	maxGoroutine := 1
+	maxGoroutine := 3
 	wp := WorkerPool{
 		MaxGoRoutine: maxGoroutine,
 		Task:         make(chan TaskWrapper),
