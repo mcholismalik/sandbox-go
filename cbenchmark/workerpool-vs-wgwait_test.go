@@ -18,7 +18,6 @@ func BenchmarkWgWait(b *testing.B) {
 }
 
 func BenchmarkWgWaitLean(b *testing.B) {
-	// ch := make(chan string)
 	wg := &sync.WaitGroup{}
 	maxGoroutine := 3
 
@@ -40,12 +39,13 @@ func BenchmarkWorkerPool(b *testing.B) {
 	maxGoroutine := 3
 	wp := WorkerPool{
 		MaxGoRoutine: maxGoroutine,
-		Task:         make(chan TaskWrapper),
+		Job:          make(chan JobWrapper),
+		Wg:           &sync.WaitGroup{},
 	}
 	wp.Run()
 
 	for i := 0; i < b.N; i++ {
-		taskWrapper := TaskWrapper{
+		taskWrapper := JobWrapper{
 			Func: func(params ...interface{}) {
 				str := params[0].(string)
 
@@ -53,7 +53,7 @@ func BenchmarkWorkerPool(b *testing.B) {
 			},
 			Params: []interface{}{fmt.Sprintf("abc-%d", i)},
 		}
-		wp.AddTask(taskWrapper)
+		wp.AddJob(taskWrapper)
 	}
 }
 
@@ -61,11 +61,11 @@ func BenchmarkWorkerPoolLean(b *testing.B) {
 	maxGoroutine := 3
 	wp := WorkerPoolLean{
 		MaxGoRoutine: maxGoroutine,
-		Task:         make(chan string),
+		Job:          make(chan string),
 	}
 	wp.Run()
 
 	for i := 0; i < b.N; i++ {
-		wp.AddTask(fmt.Sprintf("abc-%d", i))
+		wp.AddJob(fmt.Sprintf("abc-%d", i))
 	}
 }

@@ -5,49 +5,57 @@ import (
 	"sync"
 )
 
-type TaskWrapper struct {
+type JobWrapper struct {
 	Func   func(...interface{})
 	Params []interface{}
 }
 
 type WorkerPool struct {
 	MaxGoRoutine int
-	Task         chan TaskWrapper
+	MaxEvent     int
+	Job          chan JobWrapper
+	Wg           *sync.WaitGroup
 }
 
-func (wp *WorkerPool) AddTask(taskWrapper TaskWrapper) {
-	wp.Task <- taskWrapper
+func (wp *WorkerPool) AddJob(taskWrapper JobWrapper) {
+	wp.Job <- taskWrapper
 }
 
 func (wp *WorkerPool) Run() {
-	for i := 0; i < wp.MaxGoRoutine; i++ {
-		go func(i int) {
-			for task := range wp.Task {
-				task.Func(task.Params...)
-			}
-		}(i)
-	}
+	go func() {
+		for i := 0; i < wp.MaxGoRoutine; i++ {
+			go func(i int) {
+				for task := range wp.Job {
+					task.Func(task.Params...)
+				}
+			}(i)
+		}
+	}()
 }
 
 type WorkerPoolLean struct {
 	MaxGoRoutine int
-	Task         chan string
+	MaxEvent     int
+	Job          chan string
+	Wg           *sync.WaitGroup
 }
 
-func (wp *WorkerPoolLean) AddTask(taskWrapper string) {
-	wp.Task <- taskWrapper
+func (wp *WorkerPoolLean) AddJob(taskWrapper string) {
+	wp.Job <- taskWrapper
 }
 
 func (wp *WorkerPoolLean) Run() {
-	for i := 0; i < wp.MaxGoRoutine; i++ {
-		go func(i int) {
-			for task := range wp.Task {
-				func(str string) {
-					fmt.Println("result:", str)
-				}(task)
-			}
-		}(i)
-	}
+	go func() {
+		for i := 0; i < wp.MaxGoRoutine; i++ {
+			go func(i int) {
+				for task := range wp.Job {
+					func(str string) {
+						fmt.Println("result:", str)
+					}(task)
+				}
+			}(i)
+		}
+	}()
 }
 
 func WgWait(ch chan string, wg *sync.WaitGroup, maxGoroutine int) {

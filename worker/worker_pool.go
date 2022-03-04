@@ -1,94 +1,118 @@
 package worker
 
 import (
+	"context"
 	"fmt"
+	"sync"
 	"time"
 )
 
-type TaskWrapper struct {
+type JobWrapper struct {
 	Func   func(...interface{})
 	Params []interface{}
 }
 
 type WorkerPool struct {
 	MaxGoRoutine int
-	Task         chan TaskWrapper
+	MaxEvent     int
+	Job          chan JobWrapper
+	Wg           *sync.WaitGroup
 }
 
-func (wp *WorkerPool) AddTask(taskWrapper TaskWrapper) {
-	wp.Task <- taskWrapper
+func NewWorkerPool(maxGoRoutine int, maxEvent int) *WorkerPool {
+	return &WorkerPool{
+		MaxGoRoutine: maxGoRoutine,
+		MaxEvent:     maxEvent,
+		Job:          make(chan JobWrapper),
+		Wg:           &sync.WaitGroup{},
+	}
+}
+
+func (wp *WorkerPool) AddJob(JobWrapper JobWrapper) {
+	wp.Job <- JobWrapper
 }
 
 func (wp *WorkerPool) Run() {
-	for i := 0; i < wp.MaxGoRoutine; i++ {
-		go func(i int) {
-			for task := range wp.Task {
-				task.Func(task.Params...)
-			}
-		}(i)
-	}
+	wp.Wg.Add(wp.MaxEvent)
+	go func() {
+		for i := 0; i < wp.MaxGoRoutine; i++ {
+			go func(i int) {
+				for job := range wp.Job {
+					job.Func(job.Params...)
+					wp.Wg.Done()
+				}
+			}(i)
+		}
+		wp.Wg.Wait()
+		close(wp.Job)
+	}()
 }
 
-func NewWorkerPool() {
+func RunWorkerPool() {
 	fmt.Println("worker pool - start")
 
 	// benchmark
-	defer BenchmarkMemory("worker pool - after")
 	defer BenchmarkTime("worker pool", time.Now())
+	go NumGoroutine()
 
-	// goroutine checker
-	// go func() {
-	// 	for {
-	// 		fmt.Println("num goroutine:", runtime.NumGoroutine())
-	// 		time.Sleep(time.Second * 3)
-	// 	}
-	// }()
-
-	// worker
+	// config
 	maxGoRoutine := 3
-	worker := WorkerPool{
-		MaxGoRoutine: maxGoRoutine,
-		Task:         make(chan TaskWrapper),
-	}
-	worker.Run()
+	maxEvent := 30
+	eventResult := make(chan EventResult)
+	wp := NewWorkerPool(maxGoRoutine, maxEvent)
+	wp.Run()
 
-	// task
-	maxTask := 100
-	taskResult := make(chan string, maxTask)
-
-	// defer
-	defer func() {
-		close(taskResult)
-		close(worker.Task)
-	}()
+	// ctx
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(time.Second*5))
+	defer cancel()
 
 	go func() {
-		for i := 1; i <= maxTask; i++ {
-			task := TaskWrapper{
+		for i := 1; i <= maxEvent; i++ {
+			task := JobWrapper{
 				Func: func(params ...interface{}) {
-					name := params[0].(string)
-					i := params[1].(int)
-
-					HighMemoryTask()
+					ctxGr := params[0].(context.Context)
+					name := params[1].(string)
+					i := params[2].(int)
 
 					timeConsume := time.Second * 1
 					// if i%3 == 0 {
 					// 	timeConsume = time.Second * 10
 					// }
-					// time.Sleep(timeConsume)
+					time.Sleep(timeConsume)
 
 					maskName := fmt.Sprintf(`Mr %s %d, consume %d`, name, i, timeConsume/time.Second)
-					taskResult <- maskName
+					eventResult <- EventResult{
+						Name: maskName,
+						Err:  ctxGr.Err(),
+					}
 				},
-				Params: []interface{}{"malik", i},
+				Params: []interface{}{ctx, "malik", i},
 			}
-			worker.AddTask(task)
+			wp.AddJob(task)
 		}
 	}()
 
-	for i := 0; i < maxTask; i++ {
-		fmt.Println("worker pool - result :", <-taskResult)
+	// update
+	failedValues := []string{}
+	successValues := []string{}
+	for i := 0; i < maxEvent; i++ {
+		result := <-eventResult
+		if result.Err == nil {
+			successValues = append(successValues, result.Name)
+		} else {
+			failedValues = append(failedValues, result.Name)
+		}
+
+		fmt.Println("worker pool - is error :", result.Err)
 	}
+	MockUpdateDb("worker pool", successValues, failedValues)
+
+	// cleansing
+	close(eventResult)
+
+	// sleep 10s to check goroutine
+	fmt.Println("worker pool - sleep 10s")
+	time.Sleep(time.Second * 10)
 
 	fmt.Println("worker pool - finish")
 }
