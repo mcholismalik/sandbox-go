@@ -29,6 +29,7 @@ func BenchmarkWorkerPool(b *testing.B) {
 		taskWrapper := TaskWrapper{
 			Func: func(params ...interface{}) {
 				str := params[0].(string)
+
 				fmt.Println("result:", str)
 			},
 			Params: []interface{}{fmt.Sprintf("abc-%d", i)},

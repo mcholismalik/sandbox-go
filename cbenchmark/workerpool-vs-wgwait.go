@@ -40,8 +40,7 @@ func WgWait(ch chan string, wg *sync.WaitGroup, maxGoroutine int) {
 		go func(str string) {
 			defer wg.Done()
 
-			maskStr := fmt.Sprintf(`Mr %s`, str)
-			fmt.Println("result:", maskStr)
+			fmt.Println("result:", str)
 		}(<-ch)
 
 		i++
