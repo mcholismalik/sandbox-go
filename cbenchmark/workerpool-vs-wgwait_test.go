@@ -37,3 +37,16 @@ func BenchmarkWorkerPool(b *testing.B) {
 		wp.AddTask(taskWrapper)
 	}
 }
+
+func BenchmarkWorkerPoolLean(b *testing.B) {
+	maxGoroutine := 3
+	wp := WorkerPoolLean{
+		MaxGoRoutine: maxGoroutine,
+		Task:         make(chan string),
+	}
+	wp.Run()
+
+	for i := 0; i < b.N; i++ {
+		wp.AddTask(fmt.Sprintf("abc-%d", i))
+	}
+}

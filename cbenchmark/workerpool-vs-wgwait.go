@@ -29,6 +29,27 @@ func (wp *WorkerPool) Run() {
 	}
 }
 
+type WorkerPoolLean struct {
+	MaxGoRoutine int
+	Task         chan string
+}
+
+func (wp *WorkerPoolLean) AddTask(taskWrapper string) {
+	wp.Task <- taskWrapper
+}
+
+func (wp *WorkerPoolLean) Run() {
+	for i := 0; i < wp.MaxGoRoutine; i++ {
+		go func(i int) {
+			for task := range wp.Task {
+				func(str string) {
+					fmt.Println("result:", str)
+				}(task)
+			}
+		}(i)
+	}
+}
+
 func WgWait(ch chan string, wg *sync.WaitGroup, maxGoroutine int) {
 	i := 0
 	for {
