@@ -17,6 +17,25 @@ func BenchmarkWgWait(b *testing.B) {
 	}
 }
 
+func BenchmarkWgWaitLean(b *testing.B) {
+	// ch := make(chan string)
+	wg := &sync.WaitGroup{}
+	maxGoroutine := 3
+
+	for i := 0; i < b.N; i++ {
+		if i%maxGoroutine == 0 {
+			wg.Wait()
+		}
+
+		wg.Add(1)
+		go func(idx int) {
+			defer wg.Done()
+
+			fmt.Println(WgWaitLean(idx))
+		}(i)
+	}
+}
+
 func BenchmarkWorkerPool(b *testing.B) {
 	maxGoroutine := 3
 	wp := WorkerPool{

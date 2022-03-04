@@ -67,3 +67,7 @@ func WgWait(ch chan string, wg *sync.WaitGroup, maxGoroutine int) {
 		i++
 	}
 }
+
+func WgWaitLean(i int) string {
+	return fmt.Sprintf("result: %d", i)
+}
