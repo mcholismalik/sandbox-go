@@ -12,6 +12,11 @@ type EventResult struct {
 	Err  error
 }
 
+type Person struct {
+	ID   int
+	Name string
+}
+
 func BenchmarkTime(title string, now time.Time) {
 	util.TimeTrack(now, title+" - benchmark time")
 }

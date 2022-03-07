@@ -109,7 +109,6 @@ func RunWorkerPool() {
 
 		fmt.Println("worker pool - is error :", result.Err)
 	}
-
 	MockUpdateDb("worker pool", successValues, failedValues)
 
 	// DEBUG ONLY - sleep 10s to check goroutine
