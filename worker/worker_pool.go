@@ -29,23 +29,23 @@ func NewWorkerPool(maxGoRoutine int, maxEvent int) *WorkerPool {
 }
 
 func (wp *WorkerPool) AddJob(JobWrapper JobWrapper) {
+	wp.Wg.Add(1)
 	wp.Job <- JobWrapper
 }
 
 func (wp *WorkerPool) Run() {
-	wp.Wg.Add(wp.MaxEvent)
-	go func() {
-		for i := 0; i < wp.MaxGoRoutine; i++ {
-			go func(i int) {
-				for job := range wp.Job {
-					job.Func(job.Params...)
-					wp.Wg.Done()
-				}
-			}(i)
-		}
-		wp.Wg.Wait()
-		close(wp.Job)
-	}()
+	for i := 0; i < wp.MaxGoRoutine; i++ {
+		go func(i int) {
+			for job := range wp.Job {
+				job.Func(job.Params...)
+				wp.Wg.Done()
+			}
+		}(i)
+	}
+}
+
+func (wp *WorkerPool) Wait() {
+	wp.Wg.Wait()
 }
 
 func RunWorkerPool() {
@@ -67,6 +67,7 @@ func RunWorkerPool() {
 	defer cancel()
 
 	go func() {
+		defer close(wp.Job)
 		for i := 1; i <= maxEvent; i++ {
 			task := JobWrapper{
 				Func: func(params ...interface{}) {
@@ -93,10 +94,12 @@ func RunWorkerPool() {
 	}()
 
 	// update
+	wp.Wait()
+	close(eventResult)
+
 	failedValues := []string{}
 	successValues := []string{}
-	for i := 0; i < maxEvent; i++ {
-		result := <-eventResult
+	for result := range eventResult {
 		if result.Err == nil {
 			successValues = append(successValues, result.Name)
 		} else {
@@ -105,10 +108,8 @@ func RunWorkerPool() {
 
 		fmt.Println("worker pool - is error :", result.Err)
 	}
-	MockUpdateDb("worker pool", successValues, failedValues)
 
-	// cleansing
-	close(eventResult)
+	MockUpdateDb("worker pool", successValues, failedValues)
 
 	// sleep 10s to check goroutine
 	fmt.Println("worker pool - sleep 10s")
