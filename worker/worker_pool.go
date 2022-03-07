@@ -68,6 +68,8 @@ func RunWorkerPool() {
 
 	go func() {
 		defer close(wp.Job)
+		defer close(eventResult)
+
 		for i := 1; i <= maxEvent; i++ {
 			task := JobWrapper{
 				Func: func(params ...interface{}) {
@@ -91,12 +93,11 @@ func RunWorkerPool() {
 			}
 			wp.AddJob(task)
 		}
+
+		wp.Wait()
 	}()
 
 	// update
-	wp.Wait()
-	close(eventResult)
-
 	failedValues := []string{}
 	successValues := []string{}
 	for result := range eventResult {
@@ -111,7 +112,7 @@ func RunWorkerPool() {
 
 	MockUpdateDb("worker pool", successValues, failedValues)
 
-	// sleep 10s to check goroutine
+	// DEBUG ONLY - sleep 10s to check goroutine
 	fmt.Println("worker pool - sleep 10s")
 	time.Sleep(time.Second * 10)
 
