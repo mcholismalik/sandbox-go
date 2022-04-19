@@ -48,6 +48,7 @@ func (wp *WorkerPool) Wait() {
 	wp.Wg.Wait()
 }
 
+// optional, if need to set as batch / queue
 func (wp *WorkerPool) WithBatch(i int) {
 	if i%wp.MaxGoRoutine == 0 {
 		wp.Wait()
@@ -133,7 +134,7 @@ func RunWorkerPoolBatch() {
 
 	// config
 	maxGoRoutine := 3
-	maxEvent := 30
+	maxEvent := 10
 	eventResult := make(chan EventResult)
 	wp := NewWorkerPool(maxGoRoutine, maxEvent)
 	wp.Run()
