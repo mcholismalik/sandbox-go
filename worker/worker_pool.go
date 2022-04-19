@@ -83,7 +83,7 @@ func RunWorkerPool() {
 		for i := 1; i <= maxEvent; i++ {
 			_i := i
 			name := "malik"
-			wp.AddJob(func() {
+			job := func() {
 				timeConsume := time.Second * 1
 				// if i%3 == 0 {
 				// 	timeConsume = time.Second * 10
@@ -95,9 +95,10 @@ func RunWorkerPool() {
 					Name: maskName,
 					Err:  ctx.Err(),
 				}
-			})
+			}
 
-			// if wanna use batch use in here
+			wp.AddJob(job)
+			// if wanna use batch (old way), put in here
 			// wp.WithBatch(i)
 		}
 
