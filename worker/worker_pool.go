@@ -48,6 +48,12 @@ func (wp *WorkerPool) Wait() {
 	wp.Wg.Wait()
 }
 
+func (wp *WorkerPool) WithBatch(i int) {
+	if i%wp.MaxGoRoutine == 0 {
+		wp.Wait()
+	}
+}
+
 func RunWorkerPool() {
 	fmt.Println("worker pool - start")
 
@@ -116,4 +122,75 @@ func RunWorkerPool() {
 	time.Sleep(time.Second * 10)
 
 	fmt.Println("worker pool - finish")
+}
+
+func RunWorkerPoolBatch() {
+	fmt.Println("worker pool batch - start")
+
+	// benchmark
+	defer BenchmarkTime("worker pool batch", time.Now())
+	go NumGoroutine()
+
+	// config
+	maxGoRoutine := 3
+	maxEvent := 30
+	eventResult := make(chan EventResult)
+	wp := NewWorkerPool(maxGoRoutine, maxEvent)
+	wp.Run()
+
+	// ctx
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(time.Second*100))
+	defer cancel()
+
+	go func() {
+		defer close(wp.Job)
+		defer close(eventResult)
+
+		for i := 1; i <= maxEvent; i++ {
+			task := JobWrapper{
+				Func: func(params ...interface{}) {
+					ctxGr := params[0].(context.Context)
+					name := params[1].(string)
+					i := params[2].(int)
+
+					timeConsume := time.Second * 1
+					if i%3 == 0 {
+						timeConsume = time.Second * 10
+					}
+					time.Sleep(timeConsume)
+
+					maskName := fmt.Sprintf(`Mr %s %d, consume %d`, name, i, timeConsume/time.Second)
+					eventResult <- EventResult{
+						Name: maskName,
+						Err:  ctxGr.Err(),
+					}
+				},
+				Params: []interface{}{ctx, "malik", i},
+			}
+			wp.AddJob(task)
+			wp.WithBatch(i)
+		}
+
+		wp.Wait()
+	}()
+
+	// update
+	failedValues := []string{}
+	successValues := []string{}
+	for result := range eventResult {
+		if result.Err == nil {
+			successValues = append(successValues, result.Name)
+		} else {
+			failedValues = append(failedValues, result.Name)
+		}
+
+		fmt.Println("worker pool batch - is error :", result.Name)
+	}
+	MockUpdateDb("worker pool batch", successValues, failedValues)
+
+	// DEBUG ONLY - sleep 10s to check goroutine
+	fmt.Println("worker pool batch - sleep 10s")
+	time.Sleep(time.Second * 10)
+
+	fmt.Println("worker pool batch - finish")
 }

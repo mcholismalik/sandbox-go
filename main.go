@@ -5,5 +5,6 @@ import "sandbox-go/worker"
 func main() {
 	// worker.RunWgWait()
 	// worker.RunWorkerPool()
-	worker.RunWorkerPoolRace()
+	worker.RunWorkerPoolBatch()
+	// worker.RunWorkerPoolRace()
 }
